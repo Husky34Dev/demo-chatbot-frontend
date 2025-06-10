@@ -19,6 +19,7 @@
   </div>
 
   <script>
+    // Cambia esto a tu URL real de Render
     const BACKEND_URL = "https://demo-chatbot-backend.onrender.com";
 
     const chatWindow = document.getElementById('chat-window');
@@ -37,30 +38,62 @@
       e.preventDefault();
       const text = userInput.value.trim();
       if (!text) return;
+
       appendMessage(`<span class='px-3 py-2 bg-blue-100 text-blue-800 rounded inline-block'>${text}</span>`, true);
       userInput.value = '';
       appendMessage(`<span class='px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block' id='bot-typing'>…</span>`);
 
-      const res = await fetch(`${BACKEND_URL}/chat`, {
+      try {
+        const res = await fetch(`${BACKEND_URL}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let botMsg = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          botMsg += decoder.decode(value);
+          document.getElementById('bot-typing').innerText = botMsg;
+        }
+
+        const el = document.getElementById('bot-typing');
+        el.id = '';
+        el.innerHTML = `<span class='px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block'>${botMsg}</span>`;
+      } catch (err) {
+        console.error(err);
+        const el = document.getElementById('bot-typing');
+        if (el) {
+          el.id = '';
+          el.innerHTML = `<span class='px-3 py-2 bg-red-100 text-red-800 rounded inline-block'>Hubo un error al procesar tu mensaje.</span>`;
+        }
+      }
+    });
+
+    // OPCIONAL: función para usar MCP directamente si alguna vez quieres
+    async function callMCP(tools, inputs) {
+      const response = await fetch(`${BACKEND_URL}/mcp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({
+          inputs: inputs,
+          config: {
+            tool_choice: tools // por ejemplo: "auto"
+          }
+        })
       });
+      const data = await response.json();
+      console.log("Respuesta MCP:", data);
+      return data;
+    }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let botMsg = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        botMsg += decoder.decode(value);
-        document.getElementById('bot-typing').innerText = botMsg;
-      }
-
-      const el = document.getElementById('bot-typing');
-      el.id = '';
-      el.innerHTML = `<span class='px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block'>${botMsg}</span>`;
-    });
+    // Ejemplo (comentado por defecto):
+    // callMCP("auto", "Dime las facturas del DNI 12345678A");
   </script>
 </body>
 </html>
