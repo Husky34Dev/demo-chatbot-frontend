@@ -19,8 +19,7 @@
   </div>
 
   <script>
-    // URL de tu backend en Render (API)
-    const BACKEND_URL = "https://demo-chatbot-back.onrender.com/mcp";
+    const BACKEND_URL = "https://demo-chatbot-backend.onrender.com";
 
     const chatWindow = document.getElementById('chat-window');
     const chatForm = document.getElementById('chat-form');
@@ -38,26 +37,15 @@
       e.preventDefault();
       const text = userInput.value.trim();
       if (!text) return;
-      appendMessage(
-        `<span class="px-3 py-2 bg-blue-100 text-blue-800 rounded inline-block">${text}</span>`,
-        true
-      );
+      appendMessage(`<span class='px-3 py-2 bg-blue-100 text-blue-800 rounded inline-block'>${text}</span>`, true);
       userInput.value = '';
-      appendMessage(
-        `<span class="px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block" id="bot-typing">…</span>`
-      );
+      appendMessage(`<span class='px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block' id='bot-typing'>…</span>`);
 
-      // Streaming SSE
       const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text })
       });
-
-      if (!res.ok) {
-        document.getElementById('bot-typing').innerText = 'Error conectando con el servidor';
-        return;
-      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -68,9 +56,10 @@
         botMsg += decoder.decode(value);
         document.getElementById('bot-typing').innerText = botMsg;
       }
+
       const el = document.getElementById('bot-typing');
       el.id = '';
-      el.innerHTML = `<span class="px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block">${botMsg}</span>`;
+      el.innerHTML = `<span class='px-3 py-2 bg-gray-200 text-gray-800 rounded inline-block'>${botMsg}</span>`;
     });
   </script>
 </body>
